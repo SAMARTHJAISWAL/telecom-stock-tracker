@@ -4,18 +4,21 @@ const db = require('../config/db');
 
 const register = async (req, res) => {
     try {
-        const { username, password, f_name, l_name, type, phone, email } = req.body;
+        const { username, password, f_name = null, l_name = null, type, phone = null, email } = req.body;
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const [result] = await db.execute(
+        await db.execute(
             'INSERT INTO users (username, password, f_name, l_name, type, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [username, hashedPassword, f_name, l_name, type, phone, email]
         );
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'Username or email already exists' });
+        }
         res.status(500).json({ message: 'Error registering user', error: error.message });
     }
 };
@@ -23,6 +26,10 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Please provide username and password' });
+        }
 
         const [users] = await db.execute('SELECT * FROM users WHERE username = ?', [username]);
         
@@ -40,7 +47,7 @@ const login = async (req, res) => {
         const token = jwt.sign(
             { u_id: user.u_id, type: user.type },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
         );
 
         res.json({

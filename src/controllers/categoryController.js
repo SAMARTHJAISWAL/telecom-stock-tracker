@@ -12,6 +12,9 @@ const getAllCategories = async (req, res) => {
 const addCategory = async (req, res) => {
     try {
         const { category_name } = req.body;
+        if (!category_name) {
+            return res.status(400).json({ message: 'Category name is required' });
+        }
         const [result] = await db.execute(
             'INSERT INTO categories (category_name) VALUES (?)',
             [category_name]
