@@ -16,16 +16,17 @@ const getAllProducts = async (req, res) => {
 
 const addProduct = async (req, res) => {
     try {
+        // mysql2 rejects `undefined` bind values, so optional fields default to null
         const {
             p_name,
-            description,
-            category_id,
-            model_number,
-            stock_level,
-            reorder_point,
-            s_id,
-            order_date,
-            order_status
+            description = null,
+            category_id = null,
+            model_number = null,
+            stock_level = 0,
+            reorder_point = 0,
+            s_id = null,
+            order_date = null,
+            order_status = null
         } = req.body;
 
         const [result] = await db.execute(
@@ -47,16 +48,17 @@ const addProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
+        // mysql2 rejects `undefined` bind values, so optional fields default to null
         const {
             p_name,
-            description,
-            category_id,
-            model_number,
-            stock_level,
-            reorder_point,
-            s_id,
-            order_date,
-            order_status
+            description = null,
+            category_id = null,
+            model_number = null,
+            stock_level = 0,
+            reorder_point = 0,
+            s_id = null,
+            order_date = null,
+            order_status = null
         } = req.body;
         const { id } = req.params;
 
@@ -94,7 +96,7 @@ const deleteProduct = async (req, res) => {
 
 const searchProducts = async (req, res) => {
     try {
-        const { query } = req.query;
+        const { query = '' } = req.query;
         const [products] = await db.query(
             `SELECT p.*, c.category_name, s.s_name as supplier_name 
             FROM products p 
@@ -141,7 +143,7 @@ const stockIn = async (req, res) => {
     const { quantity } = req.body;
 
     try {
-        if (quantity <= 0) {
+        if (!(Number(quantity) > 0)) {
             return res.status(400).json({ message: 'Quantity must be greater than zero' });
         }
 
@@ -151,7 +153,7 @@ const stockIn = async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        const newStockLevel = product[0].stock_level + quantity;
+        const newStockLevel = product[0].stock_level + Number(quantity);
 
         await db.execute('UPDATE products SET stock_level = ? WHERE p_id = ?', [newStockLevel, id]);
 

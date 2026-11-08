@@ -30,6 +30,8 @@ const calculateDemandForecast = async (req, res) => {
                 [p_id]
             );
 
+            if (productDetails.length === 0) continue; // product was deleted
+
             const forecast = {
                 p_id: parseInt(p_id),
                 p_name: productDetails[0].p_name,

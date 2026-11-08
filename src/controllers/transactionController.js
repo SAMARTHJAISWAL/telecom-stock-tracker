@@ -6,15 +6,27 @@ const createTransaction = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { p_id, transaction_type, quantity, notes } = req.body;
+        const { p_id, transaction_type, notes = null } = req.body;
+        const quantity = Number(req.body.quantity);
         const u_id = req.user.u_id;
 
         //  product details before transaction
+        // Lock the product row so concurrent transactions can't race on stock_level
         const [productsBefore] = await connection.execute(
-            'SELECT stock_level, reorder_point, p_name FROM products WHERE p_id = ?', 
+            'SELECT stock_level, reorder_point, p_name FROM products WHERE p_id = ? FOR UPDATE', 
             [p_id]
         );
         const productBefore = productsBefore[0];
+
+        if (!productBefore) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (transaction_type === 'Stock Out' && productBefore.stock_level < quantity) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'Insufficient stock level' });
+        }
 
 
         //new stock value    
@@ -34,8 +46,8 @@ const createTransaction = async (req, res) => {
         );
 
         const [existingNotifications] = await connection.execute(
-            'SELECT * FROM notifications WHERE p_id = ? AND type = "Low Stock" AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
-            [p_id]
+            'SELECT n_id FROM notifications WHERE p_id = ? AND type = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+            [p_id, 'Low Stock']
         );
 
         // Create notification  if no notification exists

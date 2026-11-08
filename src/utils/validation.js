@@ -68,7 +68,7 @@ const validateTransaction = (req, res, next) => {
         });
     }
 
-    if (!quantity || quantity <= 0) {
+    if (!Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
         return res.status(400).json({ 
             message: 'Quantity must be a positive number' 
         });

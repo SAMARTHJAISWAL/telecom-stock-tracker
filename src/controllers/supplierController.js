@@ -11,8 +11,12 @@ const getAllSuppliers = async (req, res) => {
 
 const addSupplier = async (req, res) => {
     try {
-        const { s_name, contact_email, contact_phone } = req.body;
-        
+        const { s_name, contact_email = null, contact_phone = null } = req.body;
+
+        if (!s_name) {
+            return res.status(400).json({ message: 'Supplier name is required' });
+        }
+
         // Check for existing supplier
         const [existingSuppliers] = await db.execute(
             'SELECT * FROM suppliers WHERE s_name = ? AND contact_email = ?', 
@@ -45,7 +49,7 @@ const addSupplier = async (req, res) => {
 
 const updateSupplier = async (req, res) => {
     try {
-        const { s_name, contact_email, contact_phone } = req.body;
+        const { s_name, contact_email = null, contact_phone = null } = req.body;
         const { id } = req.params;
         const [result] = await db.execute(
             'UPDATE suppliers SET s_name = ?, contact_email = ?, contact_phone = ? WHERE s_id = ?',
