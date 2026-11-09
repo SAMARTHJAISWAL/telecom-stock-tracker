@@ -97,3 +97,7 @@ src/utils/validation.js   request validation middleware
 
 - `POST /api/auth/register` is open: anyone can create an account with any role, including `Admin`. Restrict it before any real deployment.
 - Role checks are only applied to the demand-forecast routes; every other route only requires a valid token.
+
+## Licence
+
+[MIT](LICENSE) © 2025–2026 Samarth Jaiswal
